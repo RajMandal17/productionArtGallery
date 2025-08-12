@@ -8,4 +8,5 @@ public interface UserService {
     UserDto getUserProfile(String token);
     UserDto updateUserProfile(UserUpdateRequest updateRequest, String token);
     String updateProfileImage(MultipartFile image, String token);
+    void changePassword(String oldPassword, String newPassword, String token);
 }

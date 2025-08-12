@@ -9,6 +9,8 @@ import com.artwork.service.UserService;
 import com.artwork.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final BCryptPasswordEncoder passwordEncoder;
     
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -89,6 +92,23 @@ public class UserServiceImpl implements UserService {
         }
     }
     
+    @Override
+    public void changePassword(String oldPassword, String newPassword, String token) {
+        String userId = jwtUtil.extractUserId(token);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        
+        // Verify the old password
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BadCredentialsException("Current password is incorrect");
+        }
+        
+        // Set the new password with proper encoding
+        user.setPassword(passwordEncoder.encode(newPassword));
+        
+        userRepository.save(user);
+    }
+
     private UserDto mapToDto(User user) {
         UserDto dto = new UserDto();
         dto.setId(user.getId());

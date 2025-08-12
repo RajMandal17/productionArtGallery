@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <script>
+        async function testHealth() {
+            try {
+                const response = await fetch('https://backend-dev-ce5d.up.railway.app/health');
+                const data = await response.json();
+                document.getElementById('health-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('health-result').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function testLogin() {
+            try {
+                const response = await fetch('https://backend-dev-ce5d.up.railway.app/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('login-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('login-result').textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    
+    <div>
+        <h2>Health Check Test</h2>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <pre id="health-result"></pre>
+    </div>
+    
+    <div>
+        <h2>Login Test</h2>
+        <div>
+            <label for="username">Username:</label>
+            <input type="text" id="username" value="testuser">
+        </div>
+        <div>
+            <label for="password">Password:</label>
+            <input type="password" id="password" value="password">
+        </div>
+        <button onclick="testLogin()">Test Login</button>
+        <pre id="login-result"></pre>
+    </div>
+</body>
+</html>
