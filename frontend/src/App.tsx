@@ -98,9 +98,14 @@ function App() {
                   element={<ArtistDetailPage />} 
                 />
                 
+                {/* Protected Cart Route - Customers only */}
                 <Route 
                   path="/cart" 
-                  element={<CartPage />} 
+                  element={
+                    <ProtectedRoute roles={['CUSTOMER']}>
+                      <CartPage />
+                    </ProtectedRoute>
+                  } 
                 />
                 
                 {/* Fallback route for 404 */}

@@ -10,12 +10,21 @@ const CartPage: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  
+  // Debug logging
+  console.log('CartPage render:', {
+    isAuthenticated: state.auth.isAuthenticated,
+    user: state.auth.user,
+    cartItems: state.cart.length,
+    cart: state.cart
+  });
+  
   const [shippingAddress, setShippingAddress] = useState<Address>({
     street: state.auth.user?.address || '',
     city: state.auth.user?.city || '',
     state: state.auth.user?.state || '',
     zipCode: state.auth.user?.zipCode || '',
-    country: state.auth.user?.country || '',
+    country: state.auth.user?.country || 'USA',
   });
   const [paymentMethod, setPaymentMethod] = useState('CREDIT_CARD');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -96,6 +105,15 @@ const CartPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      {/* Error boundary and loading state */}
+      {!state.auth.isAuthenticated ? (
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-xl font-semibold mb-4">Please log in to view your cart</h2>
+          <Link to="/login" className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            Go to Login
+          </Link>
+        </div>
+      ) : (
       <div className="container mx-auto px-4">
         <div className="flex items-center mb-6">
           <Link to="/dashboard/customer/browse" className="flex items-center text-blue-600 hover:text-blue-800">
@@ -130,7 +148,16 @@ const CartPage: React.FC = () => {
                 </div>
                 
                 <ul className="divide-y">
-                  {state.cart.map((item) => (
+                  {state.cart.map((item) => {
+                    // Debug each cart item
+                    console.log('Rendering cart item:', item);
+                    
+                    if (!item.artwork || !item.artwork.images || item.artwork.images.length === 0) {
+                      console.warn('Invalid cart item:', item);
+                      return null;
+                    }
+                    
+                    return (
                     <li key={item.id} className="p-6 flex flex-col sm:flex-row">
                       <div className="flex-shrink-0 w-full sm:w-32 h-32 mb-4 sm:mb-0">
                         <img
@@ -144,10 +171,10 @@ const CartPage: React.FC = () => {
                           <div>
                             <h3 className="text-lg font-medium">{item.artwork.title}</h3>
                             <p className="text-gray-500 text-sm">
-                              by {item.artwork.artist.firstName} {item.artwork.artist.lastName}
+                              by {item.artwork.artist?.firstName || 'Unknown'} {item.artwork.artist?.lastName || 'Artist'}
                             </p>
                             <p className="text-gray-500 text-sm mt-1">
-                              {item.artwork.medium} • {item.artwork.dimensions.width}" × {item.artwork.dimensions.height}"
+                              {item.artwork.medium} • {item.artwork.dimensions?.width || 'N/A'}" × {item.artwork.dimensions?.height || 'N/A'}"
                             </p>
                           </div>
                           <div className="mt-2 sm:mt-0 text-right">
@@ -183,7 +210,8 @@ const CartPage: React.FC = () => {
                         </div>
                       </div>
                     </li>
-                  ))}
+                    );
+                  }).filter(Boolean)}
                 </ul>
               </div>
             </div>
@@ -343,6 +371,7 @@ const CartPage: React.FC = () => {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };
