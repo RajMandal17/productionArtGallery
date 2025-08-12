@@ -11,6 +11,7 @@ import {
   Palette,
   LogOut
 } from 'lucide-react';
+import DarkModeToggle from './DarkModeToggle';
 import { authAPI } from '../../services/api';
 import { toast } from 'react-toastify';
 
@@ -56,13 +57,13 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
+    <header className="bg-white dark:bg-dark-bg shadow-lg sticky top-0 z-50 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <Palette className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">ArtMarket</span>
+            <Palette className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">ArtMarket</span>
           </Link>
 
           {/* Search Bar */}
@@ -83,12 +84,15 @@ const Header: React.FC = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/artworks" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link to="/artworks" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               Browse Art
             </Link>
-            <Link to="/artists" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link to="/artists" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               Artists
             </Link>
+            
+            {/* Dark Mode Toggle */}
+            <DarkModeToggle />
             
             {state.auth.isAuthenticated ? (
               <>

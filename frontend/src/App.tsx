@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { AppProvider } from './context/AppContext';
+import OnboardingTour from './components/onboarding/OnboardingTour';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -178,6 +179,9 @@ function App() {
         
         {/* Auth Debugger Tool - Only for development */}
         <AuthDebugger />
+        
+        {/* Onboarding Tour */}
+        <OnboardingTour />
       </Router>
     </AppProvider>
   );

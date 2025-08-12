@@ -1,15 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { User, PencilLine, Upload, Save, Lock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, PencilLine, Upload, Save, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAppContext } from '../../../context/AppContext';
 import { userAPI } from '../../../services/userAPI';
+import { useFormValidation } from '../../../hooks/useFormValidation';
 
 const CustomerProfile: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(state.auth.user?.profileImage || null);
-  const [formValues, setFormValues] = useState({
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  
+  // Validation rules
+  const validationRules = {
+    firstName: { required: true, minLength: 2, maxLength: 50 },
+    lastName: { required: true, minLength: 2, maxLength: 50 },
+    email: { 
+      required: true, 
+      pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ 
+    },
+    zipCode: { 
+      pattern: /^[0-9]{5}(-[0-9]{4})?$/, 
+      validate: (value: string) => !value || /^[0-9]{5}(-[0-9]{4})?$/.test(value) || 'Invalid ZIP format (e.g. 12345 or 12345-6789)'
+    }
+  };
+
+  const initialValues = {
     firstName: state.auth.user?.firstName || '',
     lastName: state.auth.user?.lastName || '',
     email: state.auth.user?.email || '',
@@ -18,15 +35,21 @@ const CustomerProfile: React.FC = () => {
     state: state.auth.user?.state || '',
     zipCode: state.auth.user?.zipCode || '',
     country: state.auth.user?.country || ''
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormValues({
-      ...formValues,
-      [name]: value
-    });
   };
+  
+  const {
+    values: formValues,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    setValues: setFormValues
+  } = useFormValidation(initialValues, validationRules);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange(e);
+  }, [handleChange]);
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -111,6 +134,14 @@ const CustomerProfile: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate all fields before submission
+    if (!validateForm()) {
+      toast.error('Please fix the form errors before submitting');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
       toast.info('Saving profile changes...');
 
@@ -146,6 +177,7 @@ const CustomerProfile: React.FC = () => {
         } catch (error) {
           console.error('Error updating profile image:', error);
           toast.error('Failed to upload profile image');
+          setIsSubmitting(false);
           return;
         }
       } else {
@@ -171,17 +203,19 @@ const CustomerProfile: React.FC = () => {
       }
 
       setIsEditing(false);
+      setIsSubmitting(false);
       toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div>
+    <div className="dark:bg-dark-bg dark:text-dark-text transition-colors">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Profile Settings</h1>
+        <h1 className="text-2xl font-semibold dark:text-white">Profile Settings</h1>
         <div className="flex gap-3">
           {/* Change Password Button */}
           <button
@@ -205,20 +239,30 @@ const CustomerProfile: React.FC = () => {
             <button
               type="submit"
               form="profile-form"
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              disabled={isSubmitting}
+              className={`flex items-center px-4 py-2 ${isSubmitting ? 'bg-gray-500' : 'bg-green-600 hover:bg-green-700'} text-white rounded-md`}
             >
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-t-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white dark:bg-dark-card rounded-lg border dark:border-dark-border p-6 transition-colors">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Profile Image */}
           <div className="flex flex-col items-center">
-            <div className="h-40 w-40 rounded-full bg-blue-100 flex items-center justify-center mb-4 overflow-hidden">
+            <div className="h-40 w-40 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-4 overflow-hidden">
               {previewImage ? (
                 <img 
                   src={previewImage} 
@@ -226,12 +270,12 @@ const CustomerProfile: React.FC = () => {
                   className="h-full w-full object-cover" 
                 />
               ) : (
-                <User size={64} className="text-blue-600" />
+                <User size={64} className="text-blue-600 dark:text-blue-400" />
               )}
             </div>
             
             {isEditing && (
-              <label className="cursor-pointer px-4 py-2 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200 flex items-center">
+              <label className="cursor-pointer px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800 flex items-center transition-colors">
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Photo
                 <input 
@@ -249,7 +293,7 @@ const CustomerProfile: React.FC = () => {
             <form id="profile-form" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     First Name
                   </label>
                   <input
@@ -257,13 +301,22 @@ const CustomerProfile: React.FC = () => {
                     name="firstName"
                     value={formValues.firstName}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
+                    className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
+                      touched.firstName && errors.firstName ? 'border-red-500 dark:border-red-600' : ''
+                    }`}
                     required
                   />
+                  {touched.firstName && errors.firstName && (
+                    <div className="text-red-500 dark:text-red-400 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.firstName}
+                    </div>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Last Name
                   </label>
                   <input
@@ -271,15 +324,24 @@ const CustomerProfile: React.FC = () => {
                     name="lastName"
                     value={formValues.lastName}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
+                    className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 dark:disabled:bg-gray-800 dark:bg-gray-800 dark:border-gray-700 dark:text-white ${
+                      touched.lastName && errors.lastName ? 'border-red-500 dark:border-red-600' : ''
+                    }`}
                     required
                   />
+                  {touched.lastName && errors.lastName && (
+                    <div className="text-red-500 dark:text-red-400 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.lastName}
+                    </div>
+                  )}
                 </div>
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
                 </label>
                 <input
@@ -287,16 +349,16 @@ const CustomerProfile: React.FC = () => {
                   name="email"
                   value={formValues.email}
                   disabled={true} // Email changes typically require verification
-                  className="w-full px-3 py-2 border rounded-md bg-gray-100"
+                  className="w-full px-3 py-2 border rounded-md bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400"
                 />
                 {isEditing && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Contact customer support to change your email address
                   </p>
                 )}
               </div>
               
-              <h3 className="font-medium text-lg mb-3 mt-6">Shipping Address</h3>
+              <h3 className="font-medium text-lg mb-3 mt-6 dark:text-white">Shipping Address</h3>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Street Address
@@ -350,9 +412,18 @@ const CustomerProfile: React.FC = () => {
                     name="zipCode"
                     value={formValues.zipCode}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
                     disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
+                    className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                      touched.zipCode && errors.zipCode ? 'border-red-500' : ''
+                    }`}
                   />
+                  {touched.zipCode && errors.zipCode && (
+                    <div className="text-red-500 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.zipCode}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -376,45 +447,45 @@ const CustomerProfile: React.FC = () => {
       {/* Password Change Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold mb-4">Change Password</h3>
+          <div className="bg-white dark:bg-dark-card rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold mb-4 dark:text-white">Change Password</h3>
             
             <form onSubmit={handlePasswordChange}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Current Password
                 </label>
                 <input
                   type="password"
                   value={passwordData.oldPassword}
                   onChange={(e) => setPasswordData({...passwordData, oldPassword: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
               
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   New Password
                 </label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
               
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Confirm New Password
                 </label>
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                  className="w-full px-3 py-2 border rounded-md"
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                   required
                 />
               </div>
@@ -423,13 +494,13 @@ const CustomerProfile: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPasswordModal(false)}
-                  className="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-100"
+                  className="px-4 py-2 border text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                 >
                   Update Password
                 </button>
