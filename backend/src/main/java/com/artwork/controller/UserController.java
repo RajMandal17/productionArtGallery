@@ -39,6 +39,34 @@ public class UserController {
         return ResponseEntity.ok(imageUrl);
     }
     
+    @PutMapping("/password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData,
+                                          @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+        String oldPassword = passwordData.get("oldPassword");
+        String newPassword = passwordData.get("newPassword");
+        
+        if (oldPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "status", "error",
+                "message", "Old password and new password are required"
+            ));
+        }
+        
+        try {
+            userService.changePassword(oldPassword, newPassword, token);
+            return ResponseEntity.ok(Map.of(
+                "status", "success",
+                "message", "Password updated successfully"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "status", "error",
+                "message", e.getMessage()
+            ));
+        }
+    }
+    
     @GetMapping("/auth-check")
     public ResponseEntity<?> checkAuthentication(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;

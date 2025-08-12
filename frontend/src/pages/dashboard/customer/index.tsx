@@ -1,7 +1,7 @@
-import React from 'react';
-import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Routes, Route, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { 
-  User, ShoppingBag, Heart, Star, 
+  User, ShoppingBag, Heart, 
   LayoutDashboard, LogOut, Search, ShoppingCart
 } from 'lucide-react';
 
@@ -149,6 +149,9 @@ const CustomerDashboard: React.FC = () => {
               <Route path="orders/:orderId" element={<OrderDetails />} />
               <Route path="profile" element={<CustomerProfile />} />
             </Routes>
+            
+            {/* Handle direct access to /profile URL */}
+            {location.pathname === '/profile' && <CustomerProfile />}
           </div>
         </div>
       </div>

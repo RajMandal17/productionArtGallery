@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { User, PencilLine, Upload, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, PencilLine, Upload, Save, Lock } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAppContext } from '../../../context/AppContext';
+import { userAPI } from '../../../services/userAPI';
 
 const CustomerProfile: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -46,42 +47,131 @@ const CustomerProfile: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  // Add state for password management
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Load user profile data on component mount
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const userProfile = await userAPI.getProfile();
+        
+        // Update form values with the latest data
+        setFormValues({
+          firstName: userProfile.firstName || '',
+          lastName: userProfile.lastName || '',
+          email: userProfile.email || '',
+          address: userProfile.address || '',
+          city: userProfile.city || '',
+          state: userProfile.state || '',
+          zipCode: userProfile.zipCode || '',
+          country: userProfile.country || ''
+        });
+        
+        // Update profile image if available
+        if (userProfile.profileImage) {
+          setPreviewImage(userProfile.profileImage);
+        }
+        
+      } catch (error) {
+        console.error('Failed to load user profile:', error);
+      }
+    };
+    
+    loadUserProfile();
+  }, []);
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    
+    try {
+      toast.info('Updating password...');
+      await userAPI.changePassword(passwordData.oldPassword, passwordData.newPassword);
+      
+      // Reset form and close modal
+      setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordModal(false);
+      toast.success('Password updated successfully');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error('Failed to update password');
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       toast.info('Saving profile changes...');
 
-      // In a real app, you would:
-      // 1. Upload the image if there's a new one
-      // 2. Send the form data to the server
-      // 3. Update the local state after success
+      // If there's a new profile image, we need to upload it first
+      if (selectedImage) {
+        const imageFormData = new FormData();
+        imageFormData.append('image', selectedImage); // Updated to match backend parameter name
 
-      // Simulating success for now
-      setTimeout(() => {
-        // Update local state - using AUTH_SUCCESS as we don't have a specific UPDATE_USER action
+        try {
+          // First upload the image
+          const imageUrl = await userAPI.updateProfileWithImage(imageFormData);
+          
+          // Then update the profile data
+          const updatedUser = await userAPI.updateProfile({
+            firstName: formValues.firstName,
+            lastName: formValues.lastName,
+            address: formValues.address,
+            city: formValues.city,
+            state: formValues.state,
+            zipCode: formValues.zipCode,
+            country: formValues.country,
+            profileImage: imageUrl
+          });
+          
+          // Update local state with the full user data
+          dispatch({
+            type: 'AUTH_SUCCESS',
+            payload: {
+              user: updatedUser,
+              token: state.auth.token || ''
+            }
+          });
+        } catch (error) {
+          console.error('Error updating profile image:', error);
+          toast.error('Failed to upload profile image');
+          return;
+        }
+      } else {
+        // No image upload, just update profile data
+        const updatedUser = await userAPI.updateProfile({
+          firstName: formValues.firstName,
+          lastName: formValues.lastName,
+          address: formValues.address,
+          city: formValues.city,
+          state: formValues.state,
+          zipCode: formValues.zipCode,
+          country: formValues.country
+        });
+        
+        // Update local state
         dispatch({
           type: 'AUTH_SUCCESS',
           payload: {
-            user: {
-              ...state.auth.user!,
-              firstName: formValues.firstName,
-              lastName: formValues.lastName,
-              // Customer-specific fields
-              address: formValues.address,
-              city: formValues.city,
-              state: formValues.state,
-              zipCode: formValues.zipCode,
-              country: formValues.country,
-              ...(previewImage && { profileImage: previewImage })
-            },
+            user: updatedUser,
             token: state.auth.token || ''
           }
         });
+      }
 
-        setIsEditing(false);
-        toast.success('Profile updated successfully!');
-      }, 1000);
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
@@ -92,24 +182,36 @@ const CustomerProfile: React.FC = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Profile Settings</h1>
-        {!isEditing ? (
+        <div className="flex gap-3">
+          {/* Change Password Button */}
           <button
-            onClick={() => setIsEditing(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            onClick={() => setShowPasswordModal(true)}
+            className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
           >
-            <PencilLine className="w-4 h-4 mr-2" />
-            Edit Profile
+            <Lock className="w-4 h-4 mr-2" />
+            Change Password
           </button>
-        ) : (
-          <button
-            type="submit"
-            form="profile-form"
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Changes
-          </button>
-        )}
+          
+          {/* Edit/Save Profile Button */}
+          {!isEditing ? (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              <PencilLine className="w-4 h-4 mr-2" />
+              Edit Profile
+            </button>
+          ) : (
+            <button
+              type="submit"
+              form="profile-form"
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-lg border p-6">
@@ -270,6 +372,72 @@ const CustomerProfile: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold mb-4">Change Password</h3>
+            
+            <form onSubmit={handlePasswordChange}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.oldPassword}
+                  onChange={(e) => setPasswordData({...passwordData, oldPassword: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-md"
+                  required
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Update Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

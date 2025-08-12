@@ -8,6 +8,7 @@ import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import RoleBasedRedirect from './components/common/RoleBasedRedirect';
+import ProfileRedirect from './components/common/ProfileRedirect';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import AuthDebugger from './components/debug/AuthDebugger';
 
@@ -48,6 +49,16 @@ function App() {
                       <CustomerDashboard />
                     </ProtectedRoute>
                   } 
+                />
+
+                {/* Dedicated Profile Route - redirects to the customer profile page */}
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute roles={['CUSTOMER']}>
+                      <ProfileRedirect />
+                    </ProtectedRoute>
+                  }
                 />
                 
                 {/* Protected Routes - Artist */}
