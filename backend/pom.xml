@@ -7,7 +7,7 @@
     <artifactId>artwork-ecommerce</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>Artwork E-commerce Platform</name>
+        <name>Artwork E-commerce Platform</name>
     <description>Backend for artwork e-commerce platform</description>
     <properties>
         <java.version>17</java.version>
@@ -77,11 +77,41 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <version>${spring.boot.version}</version>
         </dependency>
+        
+        <!-- Rate Limiting -->
+        <dependency>
+            <groupId>com.github.vladimir-bukhtoyarov</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>7.6.0</version>
+        </dependency>
+        <!-- Resilience4j for rate limiting -->
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot2</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-ratelimiter</artifactId>
+            <version>1.7.1</version>
+        </dependency>
         <!-- ModelMapper -->
         <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
             <version>3.2.0</version>
+        </dependency>
+        
+        <!-- Flyway for database migrations -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>9.22.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>9.22.3</version>
         </dependency>
         <!-- Swagger/OpenAPI -->
         <dependency>
@@ -109,10 +139,24 @@
             <version>${spring.boot.version}</version>
         </dependency>
         <!-- Logging -->
+        <!-- Spring Boot starter-web already includes logging dependencies -->
+        <!-- Removed duplicated logging dependencies that were causing conflicts -->
+        <!-- The following dependency is kept to ensure proper version alignment -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.4.14</version>
+        </dependency>
+        <!-- Error Tracking -->
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-spring-boot-starter</artifactId>
+            <version>6.33.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-logback</artifactId>
+            <version>6.33.0</version>
         </dependency>
         <!-- Testing -->
         <dependency>
@@ -127,11 +171,11 @@
             <version>5.2.0</version>
             <scope>test</scope>
         </dependency>
-        <!-- Flyway (optional) -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <version>9.22.3</version>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

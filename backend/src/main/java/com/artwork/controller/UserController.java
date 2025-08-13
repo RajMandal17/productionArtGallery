@@ -1,8 +1,10 @@
 package com.artwork.controller;
 
+import com.artwork.dto.PasswordChangeRequest;
 import com.artwork.dto.UserDto;
 import com.artwork.dto.UserUpdateRequest;
 import com.artwork.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +26,7 @@ public class UserController {
     }
     
     @PutMapping("/profile")
-    public ResponseEntity<?> updateProfile(@RequestBody UserUpdateRequest updateRequest, 
+    public ResponseEntity<?> updateProfile(@Valid @RequestBody UserUpdateRequest updateRequest, 
                                          @RequestHeader("Authorization") String authHeader) {
         String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
         UserDto updatedUser = userService.updateUserProfile(updateRequest, token);
@@ -40,21 +42,12 @@ public class UserController {
     }
     
     @PutMapping("/password")
-    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData,
+    public ResponseEntity<?> changePassword(@Valid @RequestBody PasswordChangeRequest passwordRequest,
                                           @RequestHeader("Authorization") String authHeader) {
         String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
-        String oldPassword = passwordData.get("oldPassword");
-        String newPassword = passwordData.get("newPassword");
-        
-        if (oldPassword == null || newPassword == null) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "status", "error",
-                "message", "Old password and new password are required"
-            ));
-        }
         
         try {
-            userService.changePassword(oldPassword, newPassword, token);
+            userService.changePassword(passwordRequest.getCurrentPassword(), passwordRequest.getNewPassword(), token);
             return ResponseEntity.ok(Map.of(
                 "status", "success",
                 "message", "Password updated successfully"

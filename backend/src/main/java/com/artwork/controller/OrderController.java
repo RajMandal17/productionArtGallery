@@ -4,6 +4,10 @@ import com.artwork.dto.OrderRequestDto;
 import com.artwork.dto.OrderDto;
 import com.artwork.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,15 +36,28 @@ public class OrderController {
     @PreAuthorize("hasRole('CUSTOMER') or hasRole('ARTIST')")
     @GetMapping
     public ResponseEntity<?> getOrders(@RequestHeader("Authorization") String authHeader,
-                                      @RequestParam(required = false) Integer page,
-                                      @RequestParam(required = false, defaultValue = "10") Integer limit) {
+                                      @RequestParam(defaultValue = "0") int page,
+                                      @RequestParam(defaultValue = "10") int size,
+                                      @RequestParam(defaultValue = "createdAt") String sort,
+                                      @RequestParam(defaultValue = "desc") String direction) {
         String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
-        List<OrderDto> orders = orderService.getOrders(token, page, limit);
+        
+        // Create pageable object with sorting
+        Pageable pageable = PageRequest.of(
+            page, 
+            size, 
+            direction.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC,
+            sort
+        );
+        
+        Page<OrderDto> orderPage = orderService.getOrdersPaged(token, pageable);
         
         Map<String, Object> response = new HashMap<>();
         response.put("data", Map.of(
-            "orders", orders,
-            "total", orders.size()
+            "orders", orderPage.getContent(),
+            "total", orderPage.getTotalElements(),
+            "totalPages", orderPage.getTotalPages(),
+            "currentPage", orderPage.getNumber()
         ));
         response.put("message", "Orders retrieved successfully");
         response.put("success", true);

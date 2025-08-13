@@ -9,10 +9,12 @@ import com.artwork.repository.OrderRepository;
 import com.artwork.repository.OrderItemRepository;
 import com.artwork.repository.CartItemRepository;
 import com.artwork.repository.ArtworkRepository;
-import com.artwork.security.JwtUtil;
+import com.artwork.util.JwtUtil;
 import com.artwork.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -28,9 +30,10 @@ public class OrderServiceImpl implements OrderService {
     private final ModelMapper modelMapper;
     private final JwtUtil jwtUtil;
 
+    @Override
     @Transactional
     public OrderDto placeOrder(OrderRequestDto orderRequestDto, String token) {
-        String userId = jwtUtil.getClaims(token).getSubject();
+        String userId = jwtUtil.extractUserId(token);
         double totalAmount = 0;
         List<OrderItem> orderItems = new ArrayList<>();
         for (OrderItemRequestDto itemDto : orderRequestDto.getItems()) {
@@ -64,42 +67,33 @@ public class OrderServiceImpl implements OrderService {
         return modelMapper.map(order, OrderDto.class);
     }
 
-    public List<OrderDto> getOrders(String token) {
-        return getOrders(token, null, null);
-    }
-    
     @Override
-    public List<OrderDto> getOrders(String token, Integer page, Integer limit) {
-        String userId = jwtUtil.getClaims(token).getSubject();
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(order -> order.getCustomerId().equals(userId))
-                .collect(Collectors.toList());
-        
-        // Apply pagination if specified
-        if (page != null && limit != null) {
-            int startIndex = page * limit;
-            if (startIndex < orders.size()) {
-                int endIndex = Math.min(startIndex + limit, orders.size());
-                orders = orders.subList(startIndex, endIndex);
-            } else {
-                orders = Collections.emptyList();
-            }
-        }
-        
+    public List<OrderDto> getOrders(String token) {
+        String userId = jwtUtil.extractUserId(token);
+        List<Order> orders = orderRepository.findByCustomerId(userId);
         return orders.stream()
                 .map(order -> modelMapper.map(order, OrderDto.class))
                 .collect(Collectors.toList());
     }
     
     @Override
+    public Page<OrderDto> getOrdersPaged(String token, Pageable pageable) {
+        String userId = jwtUtil.extractUserId(token);
+        Page<Order> orderPage = orderRepository.findByCustomerId(userId, pageable);
+        return orderPage.map(order -> modelMapper.map(order, OrderDto.class));
+    }
+    
+    @Override
     public OrderDto getOrderById(String id, String token) {
-        String userId = jwtUtil.getClaims(token).getSubject();
+        String userId = jwtUtil.extractUserId(token);
         Order order = orderRepository.findById(id).orElseThrow(() -> 
-                new RuntimeException("Order not found with id: " + id));
+            new RuntimeException("Order not found with id: " + id)
+        );
         
-        // Verify that the order belongs to the authenticated user
+        // Check if the order belongs to this user or if user is admin
+        // This is a simplified check; in real implementation, you'd check for admin role
         if (!order.getCustomerId().equals(userId)) {
-            throw new RuntimeException("Unauthorized access to order");
+            throw new RuntimeException("You don't have permission to access this order");
         }
         
         return modelMapper.map(order, OrderDto.class);

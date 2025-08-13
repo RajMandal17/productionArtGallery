@@ -28,6 +28,7 @@ public class UserDto {
     // Artist specific fields
     private String bio;
     private String website;
+    private SocialLinksDto socialLinks;
     private Long artworkCount;
     private Double averageRating;
 }

@@ -36,6 +36,9 @@ public class User {
     private String bio;
     private String website;
     
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private SocialLinks socialLinks;
+    
     @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.APPROVED;
 

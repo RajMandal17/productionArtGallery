@@ -3,13 +3,17 @@ package com.artwork.service.impl;
 import com.artwork.dto.ArtworkDto;
 import com.artwork.entity.Artwork;
 import com.artwork.entity.User;
+import com.artwork.exception.ResourceNotFoundException;
 import com.artwork.repository.ArtworkRepository;
 import com.artwork.repository.UserRepository;
 import com.artwork.security.UserPrincipal;
 import com.artwork.service.ArtworkService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
@@ -28,6 +32,7 @@ import java.io.IOException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ArtworkServiceImpl implements ArtworkService {
     private final ArtworkRepository artworkRepository;
     private final ModelMapper modelMapper;
@@ -36,13 +41,17 @@ public class ArtworkServiceImpl implements ArtworkService {
     private String uploadDir;
 
     @Override
+    @Cacheable(value = "artworks", key = "'page_' + #page + '_limit_' + #limit + '_cat_' + #category + '_price_' + #minPrice + '_' + #maxPrice + '_search_' + #search + '_artist_' + #artistId")
     public Page<ArtworkDto> getArtworks(int page, int limit, String category, Double minPrice, Double maxPrice, String search, String artistId) {
+        log.debug("Fetching artworks from database with filters - page: {}, limit: {}, category: {}, price: {} to {}, search: {}, artistId: {}", 
+                page, limit, category, minPrice, maxPrice, search, artistId);
+        
         // Basic implementation: filtering by category, price, search, artistId
         PageRequest pageable = PageRequest.of(page - 1, limit);
         Page<Artwork> artworks;
 
         if (category != null && !category.isEmpty()) {
-            artworks = artworkRepository.findByCategoryIgnoreCase(category, pageable);
+            artworks = artworkRepository.findByCategory(category, pageable);
         } else if (artistId != null && !artistId.isEmpty()) {
             artworks = artworkRepository.findByArtistId(artistId, pageable);
         } else if (search != null && !search.isEmpty()) {
@@ -50,9 +59,9 @@ public class ArtworkServiceImpl implements ArtworkService {
         } else if (minPrice != null && maxPrice != null) {
             artworks = artworkRepository.findByPriceBetween(minPrice, maxPrice, pageable);
         } else {
-           System.out.println("Fetching artworks...");
+           log.debug("Fetching all artworks...");
            artworks = artworkRepository.findAll(pageable);
-           System.out.println("Found artworks: " + artworks.getTotalElements());
+           log.debug("Found artworks: {}", artworks.getTotalElements());
         }
         return artworks.map(artwork -> modelMapper.map(artwork, ArtworkDto.class));
     }
@@ -94,9 +103,31 @@ public class ArtworkServiceImpl implements ArtworkService {
     }
 
     @Override
+    public ArtworkDto getArtworkById(String id) {
+        log.debug("Fetching artwork from database with id: {}", id);
+        Artwork artwork = artworkRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Artwork not found with id: " + id));
+        return modelMapper.map(artwork, ArtworkDto.class);
+    }
+
+    @Override
+    @Cacheable(value = "featuredArtworks")
+    public List<ArtworkDto> getFeaturedArtworks() {
+        log.debug("Fetching featured artworks from database");
+        // Get top 8 artworks by rating or most recent
+        PageRequest pageable = PageRequest.of(0, 8);
+        return artworkRepository.findAll(pageable)
+                .map(artwork -> modelMapper.map(artwork, ArtworkDto.class))
+                .getContent();
+    }
+
+    @Override
+    @CacheEvict(value = {"artwork", "artworks", "featuredArtworks"}, key = "#id")
     public ArtworkDto updateArtwork(String id, ArtworkDto artworkDto) {
-        Artwork artwork = artworkRepository.findById(id).orElseThrow();
+        Artwork artwork = artworkRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Artwork not found with id: " + id));
         modelMapper.map(artworkDto, artwork);
+        artwork.setUpdatedAt(LocalDateTime.now());
         artworkRepository.save(artwork);
         return modelMapper.map(artwork, ArtworkDto.class);
     }
@@ -141,5 +172,12 @@ public class ArtworkServiceImpl implements ArtworkService {
         }
         
         return imageUrls;
+    }
+    
+    @Override
+    @CacheEvict(value = {"artwork", "artworks", "featuredArtworks"}, allEntries = true)
+    public void deleteArtwork(String id) {
+        log.debug("Deleting artwork with id: {}", id);
+        artworkRepository.deleteById(id);
     }
 }

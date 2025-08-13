@@ -21,6 +21,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final RateLimitFilter rateLimitFilter;
     
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
@@ -44,7 +45,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf
+                // Disable CSRF for authentication endpoints and public API
+                .ignoringRequestMatchers(
+                    "/api/auth/**", 
+                    "/api/artworks", 
+                    "/api/artists/**", 
+                    "/api/health/**", 
+                    "/health",
+                    "/api/v1/artwork-query/**" // CQRS read-only endpoints are safe from CSRF
+                )
+                // Enable CSRF for sensitive operations (user profile updates, payments, etc.)
+                .csrfTokenRepository(new org.springframework.security.web.csrf.CookieCsrfTokenRepository())
+            )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -55,6 +68,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/artworks").permitAll() // Allow public access to list artworks
                 .requestMatchers("/api/artworks/{id:[\\w-]+}").permitAll() // Public access to view single artwork
                 .requestMatchers("/api/artists/**").permitAll() // Public access to artists
+                // CQRS query endpoints (read-only, public access)
+                .requestMatchers("/api/v1/artwork-query/**").permitAll() // Public access to all query endpoints
                 
                 // Auth verification endpoint - requires authentication but doesn't check role
                 .requestMatchers("/api/auth/verify").authenticated()
@@ -76,7 +91,8 @@ public class SecurityConfig {
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 

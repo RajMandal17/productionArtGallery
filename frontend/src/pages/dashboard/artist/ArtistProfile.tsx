@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, PencilLine, Upload, Save, Globe, Instagram, Twitter, Facebook } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAppContext } from '../../../context/AppContext';
+import userAPI from '../../../services/userAPI';
 
 const ArtistProfile: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -53,32 +54,53 @@ const ArtistProfile: React.FC = () => {
     setLoading(true);
     
     try {
-      // This would be an API call to update the user profile
-      // For now, we'll simulate it with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare the update data
+      const updateData = {
+        firstName: formValues.firstName,
+        lastName: formValues.lastName,
+        bio: formValues.bio,
+        website: formValues.website,
+        socialLinks: {
+          instagram: formValues.instagram,
+          twitter: formValues.twitter,
+          facebook: formValues.facebook
+        }
+      };
       
-      // Update local state - using AUTH_SUCCESS as we don't have a specific UPDATE_USER action
+      // Call the API to update the profile
+      const updatedUser = await userAPI.updateProfile(updateData);
+      
+      // Update local state with the response
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: {
           user: {
             ...state.auth.user!,
-            firstName: formValues.firstName,
-            lastName: formValues.lastName,
-            // Adding artist specific fields that may not be in the User type
-            ...(state.auth.user as any),
-            bio: formValues.bio,
-            website: formValues.website,
-            socialLinks: {
-              instagram: formValues.instagram,
-              twitter: formValues.twitter,
-              facebook: formValues.facebook
-            },
+            ...updatedUser,
             ...(previewImage && { profileImage: previewImage })
           },
           token: state.auth.token || ''
         }
       });
+      
+      // If we have a new profile image, upload it
+      if (selectedImage) {
+        const formData = new FormData();
+        formData.append('image', selectedImage);
+        const imageUrl = await userAPI.updateProfileWithImage(formData);
+        
+        // Update the user state with the new image URL
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: {
+            user: {
+              ...state.auth.user!,
+              profileImage: imageUrl
+            },
+            token: state.auth.token || ''
+          }
+        });
+      }
       
       toast.success('Profile updated successfully!');
       setIsEditing(false);
