@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { authAPI } from '../../services/api';
 import { toast } from 'react-toastify';
+import ThemeToggle from './theme/ThemeToggle';
 
 const Header: React.FC = () => {
   const { state, dispatch } = useAppContext();
@@ -56,7 +57,7 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
+    <header className="bg-white dark:bg-dark-bg shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -83,10 +84,13 @@ const Header: React.FC = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/artworks" className="text-gray-700 hover:text-blue-600 transition-colors">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+            
+            <Link to="/artworks" className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
               Browse Art
             </Link>
-            <Link to="/artists" className="text-gray-700 hover:text-blue-600 transition-colors">
+            <Link to="/artists" className="text-gray-700 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors">
               Artists
             </Link>
             

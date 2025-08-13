@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useCallback, memo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Star, Eye } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Eye, ZoomIn } from 'lucide-react';
 import { Artwork } from '../../types';
 import { useAppContext } from '../../context/AppContext';
 import { getFullImageUrl } from '../../services/api';
 import { toast } from 'react-toastify';
+import ArtworkPreviewModal from './preview/ArtworkPreviewModal';
 
 interface ArtworkCardProps {
   artwork: Artwork;
@@ -18,11 +19,12 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
   onAddToWishlist 
 }) => {
   const { state, dispatch } = useAppContext();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   const isInWishlist = state.wishlist.some(item => item.artwork.id === artwork.id);
   const isInCart = state.cart.some(item => item.artwork.id === artwork.id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     if (!state.auth.isAuthenticated) {
       toast.error('Please login to add items to cart');
@@ -47,9 +49,9 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
     if (onAddToCart) {
       onAddToCart(artwork);
     }
-  };
+  }, [artwork, isInCart, state.auth.isAuthenticated, dispatch, onAddToCart]);
 
-  const handleAddToWishlist = (e: React.MouseEvent) => {
+  const handleAddToWishlist = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     if (!state.auth.isAuthenticated) {
       toast.error('Please login to add items to wishlist');
@@ -76,7 +78,7 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
     if (onAddToWishlist) {
       onAddToWishlist(artwork);
     }
-  };
+  }, [artwork, isInWishlist, state.auth.isAuthenticated, dispatch, onAddToWishlist, state.wishlist]);
 
   // Handle potentially incomplete data
   const safeArtwork = {
@@ -95,7 +97,12 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
         <img
           src={getFullImageUrl(safeArtwork.images[0]) || 'https://images.pexels.com/photos/1183992/pexels-photo-1183992.jpeg'}
           alt={safeArtwork.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsPreviewOpen(true);
+          }}
         />
         
         {/* Overlay Actions */}
@@ -216,7 +223,22 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
         </div>
       </div>
     </div>
+      
+      {/* Image Preview Modal */}
+      <ArtworkPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        images={safeArtwork.images.map(img => getFullImageUrl(img) || '')}
+        title={safeArtwork.title}
+        artist={safeArtwork.artist?.name || 'Artist'}
+      />
   );
 };
 
-export default ArtworkCard;
+// Using memo to prevent unnecessary re-renders when props don't change
+export default memo(ArtworkCard, (prevProps, nextProps) => {
+  // Custom comparison to determine if the component should re-render
+  // Only re-render if artwork id changes or the artwork details themselves change
+  return prevProps.artwork.id === nextProps.artwork.id && 
+         prevProps.artwork.updatedAt === nextProps.artwork.updatedAt;
+});

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -10,22 +10,32 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import RoleBasedRedirect from './components/common/RoleBasedRedirect';
 import ProfileRedirect from './components/common/ProfileRedirect';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import AuthDebugger from './components/debug/AuthDebugger';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
 // Temporary debug import
 import './utils/debugLocalStorage';
 
-// Pages
+// Pages - Eagerly loaded
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import CartPage from './pages/CartPage';
-import ArtistsPage from './pages/ArtistsPage';
-import ArtistDetailPage from './pages/ArtistDetailPage';
 
-// Dashboard
-import ArtistDashboard from './pages/dashboard/artist';
-import CustomerDashboard from './pages/dashboard/customer';
+// Pages - Lazily loaded
+const CartPage = lazy(() => import('./pages/CartPage'));
+const ArtistsPage = lazy(() => import('./pages/ArtistsPage'));
+const ArtistDetailPage = lazy(() => import('./pages/ArtistDetailPage'));
+
+// Dashboard - Lazily loaded
+const ArtistDashboard = lazy(() => import('./pages/dashboard/artist'));
+const CustomerDashboard = lazy(() => import('./pages/dashboard/customer'));
+const AuthDebugger = lazy(() => import('./components/debug/AuthDebugger'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex justify-center items-center h-[50vh]">
+    <LoadingSpinner size="lg" />
+  </div>
+);
 
 function App() {
   return (
@@ -35,41 +45,42 @@ function App() {
           <Header />
           <main className="flex-1">
             <ErrorBoundary>
-              <Routes>
-                {/* Public Routes with Role-based Redirect for authenticated users */}
-                <Route path="/" element={<RoleBasedRedirect><HomePage /></RoleBasedRedirect>} />
-                <Route path="/login" element={<RoleBasedRedirect><LoginPage /></RoleBasedRedirect>} />
-                <Route path="/register" element={<RegisterPage />} />
-                
-                {/* Protected Routes - Customer */}
-                <Route 
-                  path="/dashboard/customer/*" 
-                  element={
-                    <ProtectedRoute roles={['CUSTOMER']}>
-                      <CustomerDashboard />
-                    </ProtectedRoute>
-                  } 
-                />
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  {/* Public Routes with Role-based Redirect for authenticated users */}
+                  <Route path="/" element={<RoleBasedRedirect><HomePage /></RoleBasedRedirect>} />
+                  <Route path="/login" element={<RoleBasedRedirect><LoginPage /></RoleBasedRedirect>} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  
+                  {/* Protected Routes - Customer - Lazy loaded */}
+                  <Route 
+                    path="/dashboard/customer/*" 
+                    element={
+                      <ProtectedRoute roles={['CUSTOMER']}>
+                        <CustomerDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
 
-                {/* Dedicated Profile Route - redirects to the customer profile page */}
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute roles={['CUSTOMER']}>
-                      <ProfileRedirect />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                {/* Protected Routes - Artist */}
-                <Route 
-                  path="/dashboard/artist/*" 
-                  element={
-                    <ProtectedRoute roles={['ARTIST']}>
-                      <ArtistDashboard />
-                    </ProtectedRoute>
-                  } 
-                />
+                  {/* Dedicated Profile Route - redirects to the customer profile page */}
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute roles={['CUSTOMER']}>
+                        <ProfileRedirect />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  {/* Protected Routes - Artist - Lazy loaded */}
+                  <Route 
+                    path="/dashboard/artist/*" 
+                    element={
+                      <ProtectedRoute roles={['ARTIST']}>
+                        <ArtistDashboard />
+                      </ProtectedRoute>
+                    } 
+                  />
                 
                 {/* Protected Routes - Admin */}
                 <Route 
@@ -158,6 +169,7 @@ function App() {
                   } 
                 />
               </Routes>
+              </Suspense>
             </ErrorBoundary>
           </main>
           <Footer />

@@ -1,15 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { User, PencilLine, Upload, Save, Lock } from 'lucide-react';
+import { User, PencilLine, Upload, Save, Lock, AlertCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAppContext } from '../../../context/AppContext';
 import { userAPI } from '../../../services/userAPI';
+import { Formik, Form, Field, ErrorMessage, FormikHelpers } from 'formik';
+import * as Yup from 'yup';
+
+// Define validation schema
+const ProfileSchema = Yup.object().shape({
+  firstName: Yup.string()
+    .min(2, 'First name must be at least 2 characters')
+    .max(50, 'First name is too long')
+    .required('First name is required'),
+  lastName: Yup.string()
+    .min(2, 'Last name must be at least 2 characters')
+    .max(50, 'Last name is too long')
+    .required('Last name is required'),
+  email: Yup.string()
+    .email('Invalid email format')
+    .required('Email is required'),
+  address: Yup.string()
+    .max(100, 'Address is too long'),
+  city: Yup.string()
+    .max(50, 'City name is too long'),
+  state: Yup.string()
+    .max(50, 'State name is too long'),
+  zipCode: Yup.string()
+    .matches(/^[0-9]{5}(-[0-9]{4})?$/, 'Invalid ZIP code format (e.g. 12345 or 12345-6789)')
+    .max(10, 'ZIP code is too long'),
+  country: Yup.string()
+    .max(50, 'Country name is too long'),
+});
+
+// Error message component
+const FormErrorMessage = ({ children }: { children: React.ReactNode }) => (
+  <div className="text-red-500 text-sm mt-1 flex items-center">
+    <AlertCircle className="w-3 h-3 mr-1" />
+    {children}
+  </div>
+);
 
 const CustomerProfile: React.FC = () => {
   const { state, dispatch } = useAppContext();
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(state.auth.user?.profileImage || null);
-  const [formValues, setFormValues] = useState({
+  const [initialValues, setInitialValues] = useState({
     firstName: state.auth.user?.firstName || '',
     lastName: state.auth.user?.lastName || '',
     email: state.auth.user?.email || '',
@@ -19,14 +55,6 @@ const CustomerProfile: React.FC = () => {
     zipCode: state.auth.user?.zipCode || '',
     country: state.auth.user?.country || ''
   });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormValues({
-      ...formValues,
-      [name]: value
-    });
-  };
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,6 +83,18 @@ const CustomerProfile: React.FC = () => {
     confirmPassword: ''
   });
 
+// Define the form values type
+interface ProfileFormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
   // Load user profile data on component mount
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -62,7 +102,7 @@ const CustomerProfile: React.FC = () => {
         const userProfile = await userAPI.getProfile();
         
         // Update form values with the latest data
-        setFormValues({
+        setInitialValues({
           firstName: userProfile.firstName || '',
           lastName: userProfile.lastName || '',
           email: userProfile.email || '',
@@ -108,9 +148,7 @@ const CustomerProfile: React.FC = () => {
     }
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (values: ProfileFormValues) => {
     try {
       toast.info('Saving profile changes...');
 
@@ -125,13 +163,13 @@ const CustomerProfile: React.FC = () => {
           
           // Then update the profile data
           const updatedUser = await userAPI.updateProfile({
-            firstName: formValues.firstName,
-            lastName: formValues.lastName,
-            address: formValues.address,
-            city: formValues.city,
-            state: formValues.state,
-            zipCode: formValues.zipCode,
-            country: formValues.country,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            address: values.address,
+            city: values.city,
+            state: values.state,
+            zipCode: values.zipCode,
+            country: values.country,
             profileImage: imageUrl
           });
           
@@ -151,13 +189,13 @@ const CustomerProfile: React.FC = () => {
       } else {
         // No image upload, just update profile data
         const updatedUser = await userAPI.updateProfile({
-          firstName: formValues.firstName,
-          lastName: formValues.lastName,
-          address: formValues.address,
-          city: formValues.city,
-          state: formValues.state,
-          zipCode: formValues.zipCode,
-          country: formValues.country
+          firstName: values.firstName,
+          lastName: values.lastName,
+          address: values.address,
+          city: values.city,
+          state: values.state,
+          zipCode: values.zipCode,
+          country: values.country
         });
         
         // Update local state
@@ -246,37 +284,44 @@ const CustomerProfile: React.FC = () => {
           
           {/* Profile Details */}
           <div className="flex-1">
-            <form id="profile-form" onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formValues.firstName}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formValues.lastName}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                    required
-                  />
-                </div>
-              </div>
+            <Formik
+              initialValues={initialValues}
+              validationSchema={ProfileSchema}
+              enableReinitialize
+              onSubmit={handleSubmit}
+            >
+              {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
+                <Form id="profile-form" onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        First Name
+                      </label>
+                      <Field
+                        type="text"
+                        name="firstName"
+                        disabled={!isEditing}
+                        className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                          errors.firstName && touched.firstName ? 'border-red-500' : ''
+                        }`}
+                      />
+                      <ErrorMessage name="firstName" component={FormErrorMessage} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Name
+                      </label>
+                      <Field
+                        type="text"
+                        name="lastName"
+                        disabled={!isEditing}
+                        className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                          errors.lastName && touched.lastName ? 'border-red-500' : ''
+                        }`}
+                      />
+                      <ErrorMessage name="lastName" component={FormErrorMessage} />
+                    </div>
+                  </div>
               
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -367,8 +412,10 @@ const CustomerProfile: React.FC = () => {
                     className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
                   />
                 </div>
-              </div>
-            </form>
+                </div>
+                </Form>
+              )}
+            </Formik>
           </div>
         </div>
       </div>

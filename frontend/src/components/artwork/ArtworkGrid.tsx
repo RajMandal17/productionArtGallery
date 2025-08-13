@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Artwork } from '../../types';
 import ArtworkCard from './ArtworkCard';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -16,6 +16,19 @@ const ArtworkGrid: React.FC<ArtworkGridProps> = ({
   onAddToCart,
   onAddToWishlist,
 }) => {
+  // Using useCallback to memoize functions passed to child components
+  const handleAddToCart = useCallback((artwork: Artwork) => {
+    if (onAddToCart) {
+      onAddToCart(artwork);
+    }
+  }, [onAddToCart]);
+
+  const handleAddToWishlist = useCallback((artwork: Artwork) => {
+    if (onAddToWishlist) {
+      onAddToWishlist(artwork);
+    }
+  }, [onAddToWishlist]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -39,12 +52,17 @@ const ArtworkGrid: React.FC<ArtworkGridProps> = ({
         <ArtworkCard
           key={artwork.id}
           artwork={artwork}
-          onAddToCart={onAddToCart}
-          onAddToWishlist={onAddToWishlist}
+          onAddToCart={handleAddToCart}
+          onAddToWishlist={handleAddToWishlist}
         />
       ))}
     </div>
   );
 };
 
-export default ArtworkGrid;
+// Using memo to prevent unnecessary re-renders when props don't change
+export default memo(ArtworkGrid, (prevProps, nextProps) => {
+  // Only re-render if loading state changes or artworks array changes
+  return prevProps.loading === nextProps.loading && 
+         prevProps.artworks === nextProps.artworks;
+});
