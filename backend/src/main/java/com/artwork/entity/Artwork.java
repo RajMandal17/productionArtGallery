@@ -32,13 +32,20 @@ public class Artwork {
     @ElementCollection
     private List<String> tags;
 
+    @Builder.Default
     private Boolean isAvailable = true;
+    
+    @Builder.Default
+    private Boolean featured = false;
 
     // We need both artistId for direct queries and artist relationship
     @Column(name = "artist_id", insertable = false, updatable = false)
     private String artistId;
     
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+    
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @ManyToOne

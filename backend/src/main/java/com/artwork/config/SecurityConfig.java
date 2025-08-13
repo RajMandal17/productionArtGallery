@@ -21,7 +21,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService userDetailsService;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final RateLimitFilter rateLimitFilter;
+    private final com.artwork.config.RateLimitFilter rateLimitFilter;
     
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {

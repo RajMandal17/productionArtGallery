@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@Component
+@Component("configRateLimitFilter")
 public class RateLimitFilter extends OncePerRequestFilter {
 
     // Store rate limiters for different IPs
