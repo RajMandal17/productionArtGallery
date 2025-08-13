@@ -222,7 +222,6 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
           </button>
         </div>
       </div>
-    </div>
       
       {/* Image Preview Modal */}
       <ArtworkPreviewModal
@@ -230,8 +229,9 @@ const ArtworkCard: React.FC<ArtworkCardProps> = ({
         onClose={() => setIsPreviewOpen(false)}
         images={safeArtwork.images.map(img => getFullImageUrl(img) || '')}
         title={safeArtwork.title}
-        artist={safeArtwork.artist?.name || 'Artist'}
+        artist={safeArtwork.artist ? `${safeArtwork.artist.firstName} ${safeArtwork.artist.lastName}` : 'Artist'}
       />
+    </div>
   );
 };
 
