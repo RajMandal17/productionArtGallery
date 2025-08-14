@@ -39,7 +39,6 @@ public class ArtworkDto {
     private List<String> tags;
     private Boolean isAvailable;
     private ArtistDto artist;
-    private String artistId;
     private Double averageRating;
     private Integer totalReviews;
     private String createdAt;

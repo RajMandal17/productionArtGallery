@@ -178,7 +178,8 @@ export const authAPI = {
   },
 
   logout: async (): Promise<void> => {
-    await apiClient.post('/auth/logout');
+    const token = TokenManager.getToken();
+    await apiClient.post('/auth/logout', { token });
   },
 
   verifyToken: async (token: string): Promise<User> => {
