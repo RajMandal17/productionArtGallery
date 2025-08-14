@@ -46,16 +46,21 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf
-                // Disable CSRF for authentication endpoints and public API
+                // Disable CSRF for authentication endpoints and API endpoints using JWT
                 .ignoringRequestMatchers(
                     "/api/auth/**", 
                     "/api/artworks", 
                     "/api/artists/**", 
                     "/api/health/**", 
                     "/health",
-                    "/api/v1/artwork-query/**" // CQRS read-only endpoints are safe from CSRF
+                    "/api/v1/artwork-query/**", // CQRS read-only endpoints are safe from CSRF
+                    "/api/users/**", // User API endpoints use JWT authentication
+                    "/api/cart/**", // Cart API endpoints use JWT authentication
+                    "/api/orders/**", // Order API endpoints use JWT authentication
+                    "/api/wishlist/**", // Wishlist API endpoints use JWT authentication
+                    "/api/dashboard/**" // Dashboard API endpoints use JWT authentication
                 )
-                // Enable CSRF for sensitive operations (user profile updates, payments, etc.)
+                // Enable CSRF for web form endpoints (if any)
                 .csrfTokenRepository(new org.springframework.security.web.csrf.CookieCsrfTokenRepository())
             )
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
