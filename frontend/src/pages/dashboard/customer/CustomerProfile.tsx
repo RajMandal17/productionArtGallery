@@ -32,8 +32,8 @@ const ProfileSchema = Yup.object().shape({
     .max(50, 'Country name is too long'),
 });
 
-// Error message component
-const FormErrorMessage = ({ children }: { children: React.ReactNode }) => (
+// Error message component  
+const FormErrorMessage = ({ children }: any) => (
   <div className="text-red-500 text-sm mt-1 flex items-center">
     <AlertCircle className="w-3 h-3 mr-1" />
     {children}
@@ -288,10 +288,12 @@ interface ProfileFormValues {
               initialValues={initialValues}
               validationSchema={ProfileSchema}
               enableReinitialize
-              onSubmit={handleSubmit}
+              onSubmit={(values: ProfileFormValues, { setSubmitting }: FormikHelpers<ProfileFormValues>) => {
+                handleSubmit(values).finally(() => setSubmitting(false));
+              }}
             >
-              {({ values, errors, touched, handleChange, handleBlur, handleSubmit }) => (
-                <Form id="profile-form" onSubmit={handleSubmit}>
+              {({ errors, touched }) => (
+                <Form id="profile-form">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -323,96 +325,100 @@ interface ProfileFormValues {
                     </div>
                   </div>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formValues.email}
-                  disabled={true} // Email changes typically require verification
-                  className="w-full px-3 py-2 border rounded-md bg-gray-100"
-                />
-                {isEditing && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Contact customer support to change your email address
-                  </p>
-                )}
-              </div>
-              
-              <h3 className="font-medium text-lg mb-3 mt-6">Shipping Address</h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Street Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formValues.address}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formValues.city}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    State/Province
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={formValues.state}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={formValues.zipCode}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Country
-                  </label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={formValues.country}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border rounded-md disabled:bg-gray-100"
-                  />
-                </div>
-                </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <Field
+                      type="email"
+                      name="email"
+                      disabled={true} // Email changes typically require verification
+                      className="w-full px-3 py-2 border rounded-md bg-gray-100"
+                    />
+                    {isEditing && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Contact customer support to change your email address
+                      </p>
+                    )}
+                  </div>
+                  
+                  <h3 className="font-medium text-lg mb-3 mt-6">Shipping Address</h3>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Street Address
+                    </label>
+                    <Field
+                      type="text"
+                      name="address"
+                      disabled={!isEditing}
+                      className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                        errors.address && touched.address ? 'border-red-500' : ''
+                      }`}
+                    />
+                    <ErrorMessage name="address" component={FormErrorMessage} />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        City
+                      </label>
+                      <Field
+                        type="text"
+                        name="city"
+                        disabled={!isEditing}
+                        className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                          errors.city && touched.city ? 'border-red-500' : ''
+                        }`}
+                      />
+                      <ErrorMessage name="city" component={FormErrorMessage} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        State/Province
+                      </label>
+                      <Field
+                        type="text"
+                        name="state"
+                        disabled={!isEditing}
+                        className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                          errors.state && touched.state ? 'border-red-500' : ''
+                        }`}
+                      />
+                      <ErrorMessage name="state" component={FormErrorMessage} />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Postal Code
+                      </label>
+                      <Field
+                        type="text"
+                        name="zipCode"
+                        disabled={!isEditing}
+                        className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                          errors.zipCode && touched.zipCode ? 'border-red-500' : ''
+                        }`}
+                      />
+                      <ErrorMessage name="zipCode" component={FormErrorMessage} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Country
+                      </label>
+                      <Field
+                        type="text"
+                        name="country"
+                        disabled={!isEditing}
+                        className={`w-full px-3 py-2 border rounded-md disabled:bg-gray-100 ${
+                          errors.country && touched.country ? 'border-red-500' : ''
+                        }`}
+                      />
+                      <ErrorMessage name="country" component={FormErrorMessage} />
+                    </div>
+                  </div>
                 </Form>
               )}
             </Formik>
