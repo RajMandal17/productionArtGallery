@@ -2,9 +2,13 @@ package com.artwork.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
@@ -19,6 +23,7 @@ public class CacheConfig {
     private long timeToLiveSeconds;
 
     @Bean
+    @ConditionalOnProperty(name = "spring.redis.host")
     public RedisCacheConfiguration cacheConfiguration() {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(timeToLiveSeconds))
@@ -27,6 +32,7 @@ public class CacheConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "spring.redis.host")
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return (builder) -> builder
                 // Artworks listing (shorter TTL since it changes frequently with filters)
@@ -50,5 +56,20 @@ public class CacheConfig {
                 // Categories (long TTL as they rarely change)
                 .withCacheConfiguration("categories",
                         RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(24)));
+    }
+
+    /**
+     * Fallback cache manager when Redis is not available
+     * Uses in-memory caching as graceful degradation
+     */
+    @Bean
+    @Primary
+    @ConditionalOnProperty(name = "spring.redis.host", matchIfMissing = true, havingValue = "")
+    public CacheManager fallbackCacheManager() {
+        return new ConcurrentMapCacheManager(
+            "artworks", "artwork", "artists", "featuredArtists", 
+            "featuredArtworks", "users", "categories",
+            "artworksCache", "artworkCache", "featuredArtworksCache"
+        );
     }
 }
