@@ -26,12 +26,18 @@ public class ReviewController {
         try {
             System.out.println("Getting reviews for artwork: " + artworkId);
             var reviews = reviewService.getReviewsByArtworkId(artworkId);
-            return ResponseEntity.ok(reviews);
+            // Ensure consistent response format
+            return ResponseEntity.ok(java.util.Map.of(
+                "reviews", reviews != null ? reviews : new java.util.ArrayList<>(),
+                "total", reviews != null ? reviews.size() : 0
+            ));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
                 "error", e.getMessage(),
-                "status", "Error retrieving artwork reviews"
+                "status", "Error retrieving artwork reviews",
+                "reviews", new java.util.ArrayList<>(),
+                "total", 0
             ));
         }
     }
@@ -42,13 +48,18 @@ public class ReviewController {
         try {
             System.out.println("Getting all reviews for artist: " + artistId);
             var reviews = reviewService.getReviewsByArtistId(artistId);
-            return ResponseEntity.ok(reviews);
+            // Ensure consistent response format
+            return ResponseEntity.ok(java.util.Map.of(
+                "reviews", reviews != null ? reviews : new java.util.ArrayList<>(),
+                "total", reviews != null ? reviews.size() : 0
+            ));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(java.util.Map.of(
                 "error", e.getMessage(),
                 "status", "Error retrieving artist reviews",
-                "reviews", new java.util.ArrayList<>()  // Always return empty array on error
+                "reviews", new java.util.ArrayList<>(),
+                "total", 0
             ));
         }
     }
