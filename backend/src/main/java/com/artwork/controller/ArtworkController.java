@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,16 +116,25 @@ public class ArtworkController {
             System.out.println("Artist ID from Principal: " + artistId);
             
             Page<ArtworkDto> result = artworkService.getArtworks(page, limit, category, minPrice, maxPrice, search, artistId);
+            
+            // Ensure we always return a valid array, even if empty
+            List<ArtworkDto> artworks = result != null ? result.getContent() : new ArrayList<>();
+            long total = result != null ? result.getTotalElements() : 0;
+            int totalPages = result != null ? result.getTotalPages() : 0;
+            
             return ResponseEntity.ok(Map.of(
-                "artworks", result.getContent(),
-                "total", result.getTotalElements(),
-                "totalPages", result.getTotalPages()
+                "artworks", artworks,
+                "total", total,
+                "totalPages", totalPages
             ));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getMessage(),
-                "status", "Error retrieving artist artworks"
+                "status", "Error retrieving artist artworks",
+                "artworks", new ArrayList<>(),  // Always provide empty array on error
+                "total", 0,
+                "totalPages", 0
             ));
         }
     }
@@ -140,16 +150,24 @@ public class ArtworkController {
             // Use the existing getArtworks method with artistId as parameter
             Page<ArtworkDto> result = artworkService.getArtworks(1, 100, null, null, null, null, artistId);
             
+            // Ensure we always return a valid array, even if empty
+            List<ArtworkDto> artworks = result != null ? result.getContent() : new ArrayList<>();
+            long total = result != null ? result.getTotalElements() : 0;
+            int totalPages = result != null ? result.getTotalPages() : 0;
+            
             return ResponseEntity.ok(Map.of(
-                "artworks", result.getContent(),
-                "total", result.getTotalElements(),
-                "totalPages", result.getTotalPages()
+                "artworks", artworks,
+                "total", total,
+                "totalPages", totalPages
             ));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getMessage(),
-                "status", "Error retrieving artist artworks"
+                "status", "Error retrieving artist artworks",
+                "artworks", new ArrayList<>(),  // Always provide empty array on error
+                "total", 0,
+                "totalPages", 0
             ));
         }
     }
