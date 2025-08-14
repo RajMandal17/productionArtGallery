@@ -6,4 +6,5 @@ import java.util.List;
 public interface ReviewService {
     ReviewDto addReview(ReviewDto reviewDto, String token);
     List<ReviewDto> getReviewsByArtworkId(String artworkId);
+    List<ReviewDto> getReviewsByArtistId(String artistId);
 }

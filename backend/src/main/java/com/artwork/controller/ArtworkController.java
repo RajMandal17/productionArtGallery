@@ -145,22 +145,32 @@ public class ArtworkController {
     @GetMapping("/artist/{artistId}")
     public ResponseEntity<?> getArtworksByArtist(@PathVariable String artistId) {
         try {
-            System.out.println("Getting artworks for artist: " + artistId);
+            System.out.println("=== Getting artworks for artist: " + artistId + " ===");
             
             // Use the existing getArtworks method with artistId as parameter
             Page<ArtworkDto> result = artworkService.getArtworks(1, 100, null, null, null, null, artistId);
             
+            System.out.println("Service returned: " + (result != null ? "Valid Page object" : "NULL"));
+            if (result != null) {
+                System.out.println("Total elements: " + result.getTotalElements());
+                System.out.println("Content size: " + (result.getContent() != null ? result.getContent().size() : "NULL"));
+            }
+            
             // Ensure we always return a valid array, even if empty
-            List<ArtworkDto> artworks = result != null ? result.getContent() : new ArrayList<>();
+            List<ArtworkDto> artworks = result != null && result.getContent() != null ? result.getContent() : new ArrayList<>();
             long total = result != null ? result.getTotalElements() : 0;
             int totalPages = result != null ? result.getTotalPages() : 0;
             
-            return ResponseEntity.ok(Map.of(
+            Map<String, Object> response = Map.of(
                 "artworks", artworks,
                 "total", total,
                 "totalPages", totalPages
-            ));
+            );
+            
+            System.out.println("Final response structure: artworks array size = " + artworks.size());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("ERROR in getArtworksByArtist: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of(
                 "error", e.getMessage(),

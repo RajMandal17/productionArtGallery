@@ -35,4 +35,21 @@ public class ReviewController {
             ));
         }
     }
+    
+    @PreAuthorize("hasAuthority('ROLE_ARTIST')")
+    @GetMapping("/artist/{artistId}")
+    public ResponseEntity<?> getReviewsByArtist(@PathVariable String artistId) {
+        try {
+            System.out.println("Getting all reviews for artist: " + artistId);
+            var reviews = reviewService.getReviewsByArtistId(artistId);
+            return ResponseEntity.ok(reviews);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of(
+                "error", e.getMessage(),
+                "status", "Error retrieving artist reviews",
+                "reviews", new java.util.ArrayList<>()  // Always return empty array on error
+            ));
+        }
+    }
 }

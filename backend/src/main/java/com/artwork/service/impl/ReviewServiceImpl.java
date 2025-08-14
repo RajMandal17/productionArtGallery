@@ -38,4 +38,12 @@ public class ReviewServiceImpl implements ReviewService {
                 .map(review -> modelMapper.map(review, ReviewDto.class))
                 .collect(Collectors.toList());
     }
+    
+    @Override
+    public List<ReviewDto> getReviewsByArtistId(String artistId) {
+        List<Review> reviews = reviewRepository.findByArtistIdOrderByCreatedAtDesc(artistId);
+        return reviews.stream()
+                .map(review -> modelMapper.map(review, ReviewDto.class))
+                .collect(Collectors.toList());
+    }
 }
