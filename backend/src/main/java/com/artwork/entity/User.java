@@ -26,10 +26,13 @@ public class User {
     private String lastName;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Role role = Role.CUSTOMER;
 
+    @Builder.Default
     private Boolean isActive = true;
     private String profileImage;
+    @Builder.Default
     private Boolean enabled = true;
     
     // Artist specific fields
@@ -40,9 +43,12 @@ public class User {
     private SocialLinks socialLinks;
     
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private UserStatus status = UserStatus.APPROVED;
 
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+    @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     // Relations
@@ -60,4 +66,14 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<WishlistItem> wishlistItems;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = java.time.LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = java.time.LocalDateTime.now();
+        }
+    }
 }
