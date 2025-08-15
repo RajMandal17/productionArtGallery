@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, PencilLine, Upload, Save, Globe, Instagram, Twitter, Facebook } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAppContext } from '../../../context/AppContext';
-import userAPI from '../../../services/userAPI';
+import { userAPI } from '../../../services/userAPI';
 
 const ArtistProfile: React.FC = () => {
   const { state, dispatch } = useAppContext();
