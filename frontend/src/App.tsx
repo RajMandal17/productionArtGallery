@@ -24,6 +24,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 const CartPage = lazy(() => import('./pages/CartPage'));
 const ArtistsPage = lazy(() => import('./pages/ArtistsPage'));
 const ArtistDetailPage = lazy(() => import('./pages/ArtistDetailPage'));
+const ArtworkDetailPage = lazy(() => import('./pages/ArtworkDetailPage'));
 
 // Dashboard - Lazily loaded
 const ArtistDashboard = lazy(() => import('./pages/dashboard/artist'));
@@ -97,7 +98,7 @@ function App() {
                   } 
                 />
 
-                {/* Fallback Routes */}
+                {/* Artwork Routes */}
                 <Route 
                   path="/artworks" 
                   element={
@@ -108,6 +109,10 @@ function App() {
                       </div>
                     </div>
                   } 
+                />
+                <Route 
+                  path="/artworks/:id" 
+                  element={<ArtworkDetailPage />} 
                 />
                 
                 <Route 
