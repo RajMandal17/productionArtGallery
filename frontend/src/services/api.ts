@@ -298,8 +298,9 @@ export const artworkAPI = {
   },
 
   getByArtist: async (artistId: string): Promise<{artworks: Artwork[], total: number, totalPages: number}> => {
-    const response = await apiClient.get<{artworks: Artwork[], total: number, totalPages: number}>(`/artworks/artist/${artistId}`);
-    return response.data;
+  const response = await apiClient.get<{artworks: Artwork[], total: number, totalPages: number}>(`/artworks/artist/${artistId}`);
+  console.log('API Response for /artworks/artist/' + artistId + ' with auth:', response);
+  return response.data;
   },
 };
 
@@ -393,8 +394,16 @@ export const reviewAPI = {
   },
 
   getByArtwork: async (artworkId: string): Promise<Review[]> => {
-    const response = await apiClient.get<Review[]>(`/reviews/artwork/${artworkId}`);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Review[]>>(`/reviews/artwork/${artworkId}`);
+      console.log('Review response for artwork:', artworkId, response.data);
+      // Handle both wrapped and unwrapped response formats
+      return Array.isArray(response.data) ? response.data : 
+             Array.isArray(response.data.data) ? response.data.data : [];
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      return [];
+    }
   },
 
   update: async (id: string, reviewData: { rating: number; comment: string }): Promise<Review> => {

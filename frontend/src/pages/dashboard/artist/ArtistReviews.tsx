@@ -28,12 +28,12 @@ const ArtistReviews: React.FC = () => {
       }
       
       // Fetch all artworks by the artist
-      const artistArtworks = await artworkAPI.getByArtist(artistId);
-      setArtworks(artistArtworks);
+      const artistArtworksResponse = await artworkAPI.getByArtist(artistId);
+      setArtworks(artistArtworksResponse.artworks);
       
       // Fetch reviews for each artwork
       let allReviews: Review[] = [];
-      for (const artwork of artistArtworks) {
+      for (const artwork of artistArtworksResponse.artworks) {
         try {
           const artworkReviews = await reviewAPI.getByArtwork(artwork.id);
           allReviews = [...allReviews, ...artworkReviews];
