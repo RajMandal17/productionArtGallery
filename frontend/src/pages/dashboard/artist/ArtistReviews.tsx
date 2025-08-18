@@ -36,7 +36,11 @@ const ArtistReviews: React.FC = () => {
       for (const artwork of artistArtworksResponse.artworks) {
         try {
           const artworkReviews = await reviewAPI.getByArtwork(artwork.id);
-          allReviews = [...allReviews, ...artworkReviews];
+          if (Array.isArray(artworkReviews)) {
+            allReviews = [...allReviews, ...artworkReviews];
+          } else {
+            console.warn(`Unexpected reviews format for artwork ${artwork.id}:`, artworkReviews);
+          }
         } catch (err) {
           console.error(`Error fetching reviews for artwork ${artwork.id}:`, err);
         }
