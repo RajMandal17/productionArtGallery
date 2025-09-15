@@ -251,7 +251,7 @@ export const artworkAPI = {
   getById: async (id: string): Promise<Artwork> => {
     try {
       // Try to get artwork from our backend first
-      const response = await apiClient.get(`/artworks/${id}`);
+      const response = await apiClient.get(`/v1/artwork-query/${id}`);
       if (response.data) {
         return response.data.data || response.data;
       }
