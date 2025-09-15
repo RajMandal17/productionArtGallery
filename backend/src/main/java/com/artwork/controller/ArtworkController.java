@@ -105,7 +105,7 @@ public class ArtworkController {
             @RequestParam(name = "page", defaultValue = "1") int page,
             @RequestParam(name = "limit", defaultValue = "12") int limit,
             @RequestParam(name = "category", required = false) String category,
-            @RequestParam(name = "minPrice", required = false) Double minPrice,
+             @RequestParam(name = "minPrice", required = false, defaultValue = "0") Double minPrice,
             @RequestParam(name = "maxPrice", required = false) Double maxPrice,
             @RequestParam(name = "search", required = false) String search,
             @AuthenticationPrincipal UserDetails userDetails
