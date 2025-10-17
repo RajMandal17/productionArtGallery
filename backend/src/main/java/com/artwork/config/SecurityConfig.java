@@ -53,6 +53,7 @@ public class SecurityConfig {
                     "/api/artists/**", 
                     "/api/health/**", 
                     "/health",
+                    "/actuator/**",
                     "/api/v1/artwork-query/**", // CQRS read-only endpoints are safe from CSRF
                     "/api/users/**", // User API endpoints use JWT authentication
                     "/api/cart/**", // Cart API endpoints use JWT authentication
@@ -68,7 +69,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
                 .requestMatchers("/", "/api/auth/login", "/api/auth/register", "/swagger-ui.html", "/swagger-ui/**", "/api-docs/**").permitAll()
-                .requestMatchers("/api/health", "/health").permitAll() // Allow Railway health checks
+                .requestMatchers("/api/health/**", "/health", "/actuator/health", "/actuator/**").permitAll() // Allow Railway health checks
                 .requestMatchers("/uploads/**").permitAll() // Allow public access to uploaded images
                 .requestMatchers("/api/artworks").permitAll() // Allow public access to list artworks
                 .requestMatchers("/api/artworks/{id:[\\w-]+}").permitAll() // Public access to view single artwork
